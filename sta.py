@@ -1,7 +1,7 @@
 #coding=utf-8
 import psycopg2
 import time
-conn=psycopg2.connect(database="loraserver", user="mxx", password="mxx1234567", host="114.215.241.193", port="5432")
+conn=psycopg2.connect(database="loraserver", user="mxx", password="mxx123456", host="114.215.241.93", port="5432")
 cur=conn.cursor()
 #统计（江山）昨天有今天没的
 sql="""with cts_now as (select distinct dev_eui from node_data where dev_eui in (select dev_eui from node where app_eui='\\x0000000000000002') and time_s>now()-interval'1 days'),
@@ -137,56 +137,103 @@ def create_excel():
 def content():
 	r=time_query
 	mail_content='''
+		<html>
 		hi all：
+		<blockquote>
+			本封邮件由脚本生成并发送，由于
 			时间段为%s至%s
+		</blockquote>
 	'''%(r[0],r[1])
 	sta={}
 	for r in js_sta:
-		sta[r[0]]=r[1]
+		sta[r[1]]=r[0]
 	mail_content+='''	
 		江山燃气表：
+			<blockquote>
 			结果如下：
-				已激活总的模块数量为:%(all)s
-				有数据上报模块数量为:%(active)s
-				未上报数据模块数量为:%(unactive)s	
-
+				<blockquote>
+				<br>已激活总的模块数量为:%(all)s</br>
+				<br>有数据上报模块数量为:%(active)s</br>
+				<br>未上报数据模块数量为:%(unactive)s</br>
+				</blockquote>
+			</blockquote>'''%sta
+	mail_content+='''
+			<blockquote>
 			与昨天对比，新增上报数据的模块：
-				模块ID			SNR			RSSI
-	'''%sta
+				<blockquote>
+				<table border="1">
+				<tr><td>模块ID</td><td>SNR</td><td>RSSI</td></tr>
+	'''
 	for r in js_today_except_yestday:
 		mail_content+='''
-				%s		%s		%s'''%(r[0],r[1],r[2])
+				<tr><td>%s</td><td>%s</td><td>%s</td></tr>'''%(r[0],r[1],r[2])
 	mail_content+='''
+				</table>
+				</blockquote>
+			</blockquote>
+			<blockquote>
 			未上报数据模块：
-				模块ID			SNR			RSSI
+				<blockquote>
+				<table border="1">
+				<tr><td>模块ID</td><td>SNR</td><td>RSSI</td></tr>
 	'''
 	for r in js_yestday_except_today:
 		mail_content+='''
-				%s		%s		%s'''%(r[0],r[1],r[2])
-	
+				<tr><td>%s</td><td>%s</td><td>%s</td></tr>'''%(r[0],r[1],r[2])
+	mail_content+='''
+				</table>
+				</blockquote>
+			</blockquote>
+	'''
 	sta={}
 	for r in gzyg_sta:
 		sta[r[0]]=r[1]
 	mail_content+='''	
 		广州烟感：
+			<blockquote>
 			结果如下：
-				已激活总的模块数量为:%(all)s
-				有数据上报模块数量为:%(active)s
-				未上报数据模块数量为:%(unactive)s	
-
+				<blockquote>
+				<br>已激活总的模块数量为:%(all)s</br>
+				<br>有数据上报模块数量为:%(active)s</br>
+				<br>未上报数据模块数量为:%(unactive)s</br>
+				</blockquote>
+			</blockquote>'''%sta
+	mail_content+='''
+			<blockquote>
 			与昨天对比，新增上报数据的模块：
-				模块ID			SNR			RSSI
-	'''%sta
+				<blockquote>
+				<table border="1">
+				<tr><td>模块ID</td><td>SNR</td><td>RSSI</td></tr>
+	'''
 	for r in gzyg_today_except_yestday:
 		mail_content+='''
-				%s		%s		%s'''%(r[0],r[1],r[2])
+				<tr><td>%s</td><td>%s</td><td>%s</td></tr>'''%(r[0],r[1],r[2])
 	mail_content+='''
+				</table>
+				</blockquote>
+			</blockquote>
+	'''
+	mail_content+='''
+			<blockquote>
 			未上报数据模块：
-				模块ID			SNR			RSSI
+				<blockquote>
+				<table border="1">
+				<tr><td>模块ID</td><td>SNR</td><td>RSSI</td></tr>
 	'''
 	for r in gzyg_yestday_except_today:
 		mail_content+='''
-				%s		%s			%s'''%(r[0],r[1],r[2])
+				<tr><td>%s</td><td>%s</td><td>%s</td></tr>'''%(r[0],r[1],r[2])
+	mail_content+='''
+				</table>
+				</blockquote>
+			</blockquote>
+	'''
+	mail_content+='''
+	<br>
+	本封邮件是由脚本自动生成，其格式是用html控制，如发现有什么缺陷，请及时指正。
+	</br>
+	'''
+	mail_content+='</html>'
 	return mail_content
 
 def gateway_offline_event():
@@ -205,7 +252,7 @@ def send_email(smtpHost, user, password,sendAddr, recipientAddrs, subject='', co
 	msg['to'] = str(recipientAddrs)
 	msg['subject'] = str(subject)
 	content = content
-	txt = email.mime.text.MIMEText(content, 'plain', 'utf-8')
+	txt = email.mime.text.MIMEText(content, 'html', 'utf-8')
 	msg.attach(txt)
 	# 添加附件，传送D:/软件/yasuo.rar文件
 	part = MIMEApplication(open('js_noactive_today.txt','rb').read())
@@ -233,7 +280,7 @@ if __name__=="__main__":
 		subject = "模块数据上报统计"+time.strftime("%Y-%m-%d", time.localtime())
 		print(subject)
 		recvs=['ma.xiangxiang@gd-iot.com']#,'gu.qinghuan@gd-iot.com','tu.xiaopeng@gd-iot.com','du.dacai@gd-iot.com','chen.ping@gd-iot.com','zhou.weiming@gd-iot.com']
-		send_email('smtp.gd-iot.com', 'ptts@gd-iot.com', 'pingtai123',u'国动信息-邮件自动下发系统', recvs, subject, ct)
+		send_email('smtp.gd-iot.com', 'ptts@gd-iot.com', 'pingtai123',u'国动信息<ptts@gd-iot.com>', recvs, subject, ct)
 	except Exception as err:
 		print(err)
 
