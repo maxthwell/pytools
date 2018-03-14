@@ -1,7 +1,7 @@
 #coding=utf-8
 import psycopg2
 import time
-conn=psycopg2.connect(database="loraserver", user="mfxfxf", password="mxx123456", host="114.215.241.93", port="5432")
+conn=psycopg2.connect(database="loraserver", user="mfxfxf", password="xxxxxxxxxxx", host="xxx.xxx.xxx.xxx", port="5432")
 cur=conn.cursor()
 #统计（江山）昨天有今天没的
 sql="""with cts_now as (select distinct dev_eui from node_data where dev_eui in (select dev_eui from node where app_eui='\\x0000000000000002') and time_s>now()-interval'1 days'),
